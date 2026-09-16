@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Contextual English Tracker",
+  "version": "0.1.0",
+  "description": "Capture unfamiliar words in context while you browse, then review them with AI-generated exercises on a spaced-repetition schedule.",
+  "permissions": ["contextMenus", "storage", "scripting", "activeTab", "alarms"],
+  "host_permissions": ["https://api.anthropic.com/*", "http://*/*", "https://*/*"],
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

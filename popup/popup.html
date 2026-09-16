@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Contextual English Tracker</title>
+  <link rel="stylesheet" href="../shared/theme.css" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="header-top">
+        <h1>Study</h1>
+        <div class="stats">
+          <span id="captureStat" class="stat" title="Words captured today"></span>
+          <span id="streakStat" class="stat" title="Hunter streak"></span>
+        </div>
+      </div>
+      <div id="capWarning" class="cap-warning hidden">
+        Daily capture limit reached. New words won't save until tomorrow (or raise the limit in Settings).
+      </div>
+      <div class="goal-row">
+        <div class="goal-bar-track">
+          <div class="goal-bar-fill" id="goalBarFill"></div>
+        </div>
+        <span id="goalLabel" class="goal-label"></span>
+      </div>
+    </header>
+
+    <main class="main">
+      <div id="onboardingState" class="onboarding-state hidden">
+        <h2>Welcome</h2>
+        <ol class="onboarding-steps">
+          <li>Highlight any word on a webpage.</li>
+          <li>Right-click and choose <strong>Save Word</strong>.</li>
+          <li>Come back here to review it once it's due.</li>
+        </ol>
+        <p class="onboarding-hint">Add your Anthropic API key in <a href="#" id="onboardingSettingsLink">Settings</a> to unlock the full set of exercise types.</p>
+      </div>
+
+      <div id="emptyState" class="empty-state hidden">
+        <p id="emptyStateMessage">No words due for review. Nice work.</p>
+        <button id="reviewMoreBtn" class="review-more-btn hidden">Review more words</button>
+      </div>
+
+      <div id="reviewCard" class="review-card hidden">
+        <div class="review-card-top">
+          <div class="progress" id="progress"></div>
+          <div class="word-badge" id="wordBadge"></div>
+        </div>
+        <div class="exercise-scroll">
+          <div id="exerciseBody"></div>
+          <div id="answerBox" class="answer-box hidden"></div>
+        </div>
+        <div class="action-row">
+          <button id="showAnswerBtn" class="show-answer-btn">Show Answer <span class="key-hint">Space</span></button>
+        </div>
+        <div class="grade-buttons">
+          <button data-grade="1" class="grade grade-fail"><span class="key-hint">1</span> Fail</button>
+          <button data-grade="2" class="grade grade-hard"><span class="key-hint">2</span> Hard</button>
+          <button data-grade="3" class="grade grade-good"><span class="key-hint">3</span> Good</button>
+          <button data-grade="4" class="grade grade-easy"><span class="key-hint">4</span> Easy</button>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <a href="../options/options.html" id="optionsLink">Settings</a>
+    </footer>
+  </div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

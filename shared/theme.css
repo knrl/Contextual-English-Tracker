@@ -1,0 +1,61 @@
+/* Shared design tokens for the popup and options pages. Colors are muted by
+   default (calmer grade buttons use color as an accent, not a solid fill) and
+   redefine automatically under prefers-color-scheme: dark. */
+
+:root {
+  color-scheme: light dark;
+
+  --bg: #ffffff;
+  --surface: #f7f8fa;
+  --fg: #1b1b1f;
+  --muted: #666666;
+  --border: #e2e2e6;
+  --accent: #2a6df4;
+  --accent-bg: #eef4ff;
+  --accent-border: #c9dbfc;
+
+  --fail: #c23b3b;
+  --fail-bg: #fdecea;
+  --fail-border: #f3b7b0;
+
+  --hard: #b8650f;
+  --hard-bg: #fdf1e0;
+  --hard-border: #f0d19a;
+
+  --good: #1e7d33;
+  --good-bg: #e9f7ec;
+  --good-border: #b8e2c2;
+
+  --easy: #2a6df4;
+  --easy-bg: #eef4ff;
+  --easy-border: #c9dbfc;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1e1f22;
+    --surface: #2a2b2f;
+    --fg: #f0f0f2;
+    --muted: #a0a0a8;
+    --border: #3a3b40;
+    --accent: #6ea1ff;
+    --accent-bg: #223354;
+    --accent-border: #35446b;
+
+    --fail: #ff8a80;
+    --fail-bg: #3a2224;
+    --fail-border: #5c2f30;
+
+    --hard: #ffb86b;
+    --hard-bg: #3a2e1a;
+    --hard-border: #5c4826;
+
+    --good: #7fd996;
+    --good-bg: #1c3324;
+    --good-border: #2c4f36;
+
+    --easy: #6ea1ff;
+    --easy-bg: #223354;
+    --easy-border: #35446b;
+  }
+}

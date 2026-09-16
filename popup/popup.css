@@ -1,0 +1,358 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+}
+
+.app {
+  width: 380px;
+  max-height: 560px;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header h1 {
+  font-size: 16px;
+  margin: 0;
+}
+
+.stats {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.cap-warning {
+  margin-top: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--fail-bg);
+  border: 1px solid var(--fail-border);
+  color: var(--fail);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.goal-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.goal-bar-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.goal-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--good);
+  border-radius: 3px;
+  transition: width 0.2s ease;
+}
+
+.goal-label {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.onboarding-state {
+  padding: 24px 20px;
+}
+
+.onboarding-state h2 {
+  font-size: 15px;
+  margin: 0 0 12px;
+}
+
+.onboarding-steps {
+  margin: 0 0 16px;
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.9;
+}
+
+.onboarding-hint {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.onboarding-hint a {
+  color: var(--accent);
+}
+
+.empty-state {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.review-more-btn {
+  margin-top: 12px;
+  padding: 8px 16px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--accent);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.review-card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px;
+  gap: 12px;
+}
+
+.review-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.progress {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.word-badge {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+}
+
+.exercise-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.ai-error-note {
+  font-size: 11px;
+  color: var(--fail);
+  background: var(--fail-bg);
+  border: 1px solid var(--fail-border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.retry-ai-btn {
+  width: 100%;
+  padding: 6px;
+  margin-bottom: 12px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--accent);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.retry-ai-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.exercise-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.exercise-sentence {
+  font-size: 15px;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.option-btn {
+  text-align: left;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--fg);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.option-btn.correct {
+  border-color: var(--good);
+  background: var(--good-bg);
+}
+
+.option-btn.incorrect {
+  border-color: var(--fail);
+  background: var(--fail-bg);
+}
+
+.option-btn:disabled {
+  cursor: default;
+}
+
+.exercise-instruction {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.compose-prompt {
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+  margin-bottom: 4px;
+}
+
+.answer-box {
+  margin-top: 4px;
+  padding: 10px;
+  border-radius: 6px;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.answer-box-main {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.answer-box-explanation {
+  color: var(--fg);
+  font-weight: 400;
+}
+
+.action-row {
+  flex-shrink: 0;
+}
+
+.show-answer-btn {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.key-hint {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  background: var(--bg);
+}
+
+.grade-buttons {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.grade {
+  flex: 1;
+  padding: 10px 4px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.grade .key-hint {
+  background: transparent;
+}
+
+.grade-fail { color: var(--fail); border-color: var(--fail-border); }
+.grade-hard { color: var(--hard); border-color: var(--hard-border); }
+.grade-good { color: var(--good); border-color: var(--good-border); }
+.grade-easy { color: var(--easy); border-color: var(--easy-border); }
+
+.grade-fail:hover { background: var(--fail-bg); }
+.grade-hard:hover { background: var(--hard-bg); }
+.grade-good:hover { background: var(--good-bg); }
+.grade-easy:hover { background: var(--easy-bg); }
+
+.footer {
+  padding: 8px 16px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.footer a {
+  font-size: 12px;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.hidden {
+  display: none !important;
+}

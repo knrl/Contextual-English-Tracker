@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Settings — Contextual English Tracker</title>
+  <link rel="stylesheet" href="../shared/theme.css" />
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 48px 24px;
+      font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: var(--fg);
+      background: var(--surface);
+    }
+
+    .page {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 20px;
+      margin: 0 0 24px;
+    }
+
+    .card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 28px 32px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 15px;
+      margin: 0 0 4px;
+    }
+
+    .card-description {
+      font-size: 13px;
+      color: var(--muted);
+      margin: 0 0 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 20px;
+    }
+
+    label:first-of-type {
+      margin-top: 0;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      margin-top: 6px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      background: var(--bg);
+      color: var(--fg);
+      box-sizing: border-box;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-bg);
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
+    button {
+      margin-top: 24px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    button:hover {
+      opacity: 0.92;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    .status-message {
+      margin-top: 14px;
+      font-size: 13px;
+    }
+
+    #status {
+      color: var(--good);
+    }
+
+    #regenerateBtn {
+      background: var(--muted);
+    }
+
+    #regenerateStatus {
+      color: var(--good);
+    }
+
+    #clearDataBtn {
+      background: var(--fail);
+    }
+
+    #clearStatus {
+      color: var(--fail);
+    }
+
+    .card.danger {
+      border-color: var(--fail-border);
+    }
+
+    .progress-bar-track {
+      margin-top: 14px;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--border);
+      overflow: hidden;
+      display: none;
+    }
+
+    .progress-bar-track.active {
+      display: block;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width 0.2s ease;
+    }
+
+    .word-list {
+      margin-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .word-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .word-row-main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .word-row-word {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .word-row-status {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 1px 7px;
+      border-radius: 999px;
+      margin-left: 8px;
+      background: var(--surface);
+      color: var(--muted);
+    }
+
+    .word-row-status.ready {
+      background: var(--good-bg);
+      color: var(--good);
+    }
+
+    .word-row-status.failed {
+      background: var(--fail-bg);
+      color: var(--fail);
+    }
+
+    .word-row-context {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .word-row-source {
+      font-size: 11px;
+      color: var(--accent);
+      text-decoration: none;
+      margin-top: 2px;
+      display: inline-block;
+    }
+
+    .word-row-delete {
+      margin-top: 0;
+      padding: 6px 12px;
+      font-size: 12px;
+      background: transparent;
+      color: var(--fail);
+      border: 1px solid var(--fail-border);
+    }
+
+    .word-list-empty {
+      font-size: 13px;
+      color: var(--muted);
+      padding: 16px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>Contextual English Tracker — Settings</h1>
+
+    <div class="card">
+      <h2>General</h2>
+      <p class="card-description">API access and your daily limits.</p>
+
+      <label for="apiKey">Anthropic API Key</label>
+      <input type="password" id="apiKey" placeholder="sk-ant-..." />
+      <div class="hint">Stored locally on this device only (chrome.storage.local), never synced.</div>
+
+      <label for="dailyCap">Daily capture cap</label>
+      <input type="number" id="dailyCap" min="1" max="50" />
+      <div class="hint">You'll get a warning banner instead of a silent save once you hit this many new words in a day.</div>
+
+      <label for="dailyGoal">Daily review goal</label>
+      <input type="number" id="dailyGoal" min="1" max="200" />
+      <div class="hint">The target shown on the popup's progress bar. If more words are due than this, the bar tracks the larger real due count instead.</div>
+
+      <button id="saveBtn">Save</button>
+      <div id="status" class="status-message"></div>
+    </div>
+
+    <div class="card">
+      <h2>Your words</h2>
+      <p class="card-description">Every word you've captured, with its source context and AI generation status.</p>
+      <div id="wordList" class="word-list"></div>
+    </div>
+
+    <div class="card">
+      <h2>Update existing words</h2>
+      <p class="card-description">Re-runs AI generation for every saved word using the current prompt — for example, to add explanations to words captured before that feature existed. Uses one API call per word, a few at a time.</p>
+      <button id="regenerateBtn">Regenerate all exercises</button>
+      <div class="progress-bar-track" id="regenerateProgressTrack">
+        <div class="progress-bar-fill" id="regenerateProgressFill"></div>
+      </div>
+      <div id="regenerateStatus" class="status-message"></div>
+    </div>
+
+    <div class="card danger">
+      <h2>Danger zone</h2>
+      <p class="card-description">Permanently deletes every captured word and resets today's captured count, reviews, and streak. Your API key and daily settings are kept.</p>
+      <button id="clearDataBtn">Clear all saved words &amp; stats</button>
+      <div id="clearStatus" class="status-message"></div>
+    </div>
+  </div>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>
