@@ -84,7 +84,7 @@ export function trimContext(text, maxChars = MAX_CONTEXT_CHARS) {
 
 // --- settings (sync) ---
 
-const DEFAULT_SETTINGS = { dailyCaptureCap: 50, dailyReviewGoal: 10 };
+const DEFAULT_SETTINGS = { dailyCaptureCap: 50, dailyReviewGoal: 10, cefrLevel: "B2" };
 
 export async function getSettings() {
   const result = await chrome.storage.sync.get("settings");

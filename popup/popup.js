@@ -1,5 +1,5 @@
 import { getAllWords, updateWord, getDailyStats, setDailyStats, getSettings } from "../background/storage.js";
-import { getDueGoalPairs, applyGradeToGoal, shuffle } from "../background/srs.js";
+import { getDueGoalPairs, applyGradeToGoal, shuffle, isGoalUnlocked, GOAL_KEYS } from "../background/srs.js";
 import { EXERCISE_TYPES, getDisplayAnswer, pickExerciseKeyForGoal } from "../background/exerciseTypes.js";
 
 const onboardingState = document.getElementById("onboardingState");
@@ -9,6 +9,7 @@ const reviewMoreBtn = document.getElementById("reviewMoreBtn");
 const reviewCard = document.getElementById("reviewCard");
 const progressEl = document.getElementById("progress");
 const wordBadge = document.getElementById("wordBadge");
+const goalProgressEl = document.getElementById("goalProgress");
 const exerciseBody = document.getElementById("exerciseBody");
 const answerBox = document.getElementById("answerBox");
 const showAnswerBtn = document.getElementById("showAnswerBtn");
@@ -182,9 +183,19 @@ function renderCurrent() {
   emptyState.classList.add("hidden");
   reviewCard.classList.remove("hidden");
   progressEl.textContent = `${currentIndex + 1} / ${queue.length}`;
-  const { word, exerciseKey } = queue[currentIndex];
+  const { word, goal, exerciseKey } = queue[currentIndex];
   wordBadge.textContent = word.word;
+  renderGoalProgress(word, goal);
   renderExercise(word, exerciseKey);
+}
+
+// Shows which goal this exercise belongs to and how far the word has come
+// through the ramp, so a locked goal reads as "not yet" rather than as
+// missing content.
+function renderGoalProgress(word, goal) {
+  const unlockedCount = GOAL_KEYS.filter((g) => isGoalUnlocked(word, g)).length;
+  const label = goal.charAt(0).toUpperCase() + goal.slice(1);
+  goalProgressEl.textContent = `${label} · ${unlockedCount} of ${GOAL_KEYS.length} goals unlocked`;
 }
 
 async function refreshStats() {
@@ -206,30 +217,15 @@ async function refreshStats() {
       : `${done} / ${goal} today's goal`;
 }
 
-function updateReviewMoreVisibility() {
+// Unlocked goals that aren't due yet and aren't already queued — the pool
+// "Review more" draws from, soonest-due first. Locked goals are excluded:
+// the difficulty ramp is a hard gate, not just a default ordering.
+function collectNotYetDuePairs() {
   const now = new Date();
   const notYetDue = [];
   for (const word of allWordsCache) {
     for (const goal of Object.keys(word.goalProgress || {})) {
-      const g = word.goalProgress[goal];
-      const alreadyQueued = queue.some((q) => q.word.id === word.id && q.goal === goal);
-      if (!alreadyQueued && new Date(g.next_review_date) > now) {
-        notYetDue.push({ word, goal });
-      }
-    }
-  }
-  reviewMoreBtn.classList.toggle("hidden", notYetDue.length === 0);
-  emptyStateMessage.textContent =
-    currentIndex === 0 && totalDueAtStart === 0
-      ? "No words due for review right now."
-      : "Today's goal is cleared. Nice work!";
-}
-
-function collectNotYetDuePairs(count) {
-  const now = new Date();
-  const notYetDue = [];
-  for (const word of allWordsCache) {
-    for (const goal of Object.keys(word.goalProgress || {})) {
+      if (!isGoalUnlocked(word, goal)) continue;
       const g = word.goalProgress[goal];
       const alreadyQueued = queue.some((q) => q.word.id === word.id && q.goal === goal);
       if (!alreadyQueued && new Date(g.next_review_date) > now) {
@@ -238,11 +234,19 @@ function collectNotYetDuePairs(count) {
     }
   }
   notYetDue.sort((a, b) => new Date(a.dueAt) - new Date(b.dueAt));
-  return notYetDue.slice(0, count);
+  return notYetDue;
+}
+
+function updateReviewMoreVisibility() {
+  reviewMoreBtn.classList.toggle("hidden", collectNotYetDuePairs().length === 0);
+  emptyStateMessage.textContent =
+    currentIndex === 0 && totalDueAtStart === 0
+      ? "No words due for review right now."
+      : "Today's goal is cleared. Nice work!";
 }
 
 async function reviewMore(count = 5) {
-  const extra = collectNotYetDuePairs(count);
+  const extra = collectNotYetDuePairs().slice(0, count);
   queue = [...queue, ...extra.map(({ word, goal }) => ({ word, goal, exerciseKey: pickExerciseKeyForGoal(word, goal) }))];
   renderCurrent();
 }

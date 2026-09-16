@@ -17,26 +17,44 @@ const GRADE_TO_QUALITY = {
   [GRADES.EASY]: 5,
 };
 
+// Order matters: this is the difficulty ramp for goal unlocking. A new word
+// starts with only the first goal unlocked, and each passing grade unlocks
+// the next one, so recognition tasks always come before production tasks.
+// Reordering GOALS in exerciseTypes.js silently changes that ramp.
 export const GOAL_KEYS = Object.values(GOALS);
 
 export function defaultGoalProgress() {
   const now = new Date().toISOString();
   const progress = {};
-  for (const goal of GOAL_KEYS) {
-    progress[goal] = { repetitions: 0, interval_days: 1, ease_factor: 2.5, next_review_date: now };
-  }
+  GOAL_KEYS.forEach((goal, index) => {
+    progress[goal] = {
+      unlocked: index === 0,
+      repetitions: 0,
+      interval_days: 1,
+      ease_factor: 2.5,
+      next_review_date: now,
+    };
+  });
   return progress;
 }
 
-// Returns [{ word, goal }] for every (word, goal) pair that's due, across all
-// words. A word can appear multiple times (once per due goal).
+// Words captured before goal unlocking existed have no `unlocked` field, and
+// must stay fully unlocked — so treat "missing" as unlocked and only ever
+// exclude an explicit false. This is what makes the change migration-free.
+export function isGoalUnlocked(word, goal) {
+  return word.goalProgress?.[goal]?.unlocked !== false;
+}
+
+// Returns [{ word, goal }] for every (word, goal) pair that's both unlocked
+// and due, across all words. A word can appear multiple times (once per due
+// goal).
 export function getDueGoalPairs(words, now = new Date()) {
   const pairs = [];
   for (const word of words) {
     const progress = word.goalProgress || {};
     for (const goal of GOAL_KEYS) {
       const g = progress[goal];
-      if (g && new Date(g.next_review_date) <= now) {
+      if (g && g.unlocked !== false && new Date(g.next_review_date) <= now) {
         pairs.push({ word, goal });
       }
     }
@@ -87,15 +105,35 @@ export function applyGradeToGoal(word, goal, grade) {
   const nextReviewDate = new Date();
   nextReviewDate.setDate(nextReviewDate.getDate() + interval_days);
 
-  return {
+  const updated = {
     ...progress,
     [goal]: {
+      ...progress[goal],
       repetitions,
       interval_days,
       ease_factor,
       next_review_date: nextReviewDate.toISOString(),
     },
   };
+
+  // First pass on this goal unlocks the next one in the ramp. Gated on
+  // repetitions going 0 -> 1 so re-passing a goal later (after a Fail reset
+  // it back to 0) doesn't re-unlock and reset an already-progressing goal.
+  const isFirstPass = quality >= 3 && repetitions === 1;
+  if (isFirstPass) {
+    const nextGoal = GOAL_KEYS[GOAL_KEYS.indexOf(goal) + 1];
+    if (nextGoal && updated[nextGoal]?.unlocked === false) {
+      updated[nextGoal] = {
+        ...updated[nextGoal],
+        unlocked: true,
+        // Due immediately, so the ramp advances within the session rather
+        // than stalling until tomorrow.
+        next_review_date: new Date().toISOString(),
+      };
+    }
+  }
+
+  return updated;
 }
 
 // A word is "learned" once every goal has been passed (quality >= 3, i.e.

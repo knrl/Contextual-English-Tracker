@@ -1,10 +1,23 @@
-import { getApiKey } from "./storage.js";
+import { getApiKey, getSettings } from "./storage.js";
 
 const API_URL = "https://api.anthropic.com/v1/messages";
 const MODEL = "claude-sonnet-5";
 const ANTHROPIC_VERSION = "2023-06-01";
 
-const SYSTEM_PROMPT = `You generate vocabulary study exercises for a spaced-repetition app.
+// Per-level guidance injected into the prompt, so generated sentences and
+// distractors are pitched at the learner rather than at whatever level the
+// model defaults to.
+const CEFR_GUIDANCE = {
+  A2: "CEFR A2 (elementary). Use short, simple sentences and high-frequency everyday vocabulary. Distractors should be clearly different from the answer, not subtle.",
+  B1: "CEFR B1 (intermediate). Use straightforward sentences on familiar topics. Distractors may be related in meaning but should be distinguishable with some thought.",
+  B2: "CEFR B2 (upper intermediate). Use sentences of moderate complexity on both concrete and abstract topics. Distractors should be plausible near-synonyms requiring real discrimination.",
+  C1: "CEFR C1 (advanced). Use complex sentences, including idiomatic and figurative usage. Distractors should differ mainly in register, connotation or collocation.",
+  C2: "CEFR C2 (proficient). Use sophisticated, nuanced language including subtle idiom and stylistic variation. Distractors should be very fine-grained, differing only in precise shades of meaning.",
+};
+
+export const CEFR_LEVELS = Object.keys(CEFR_GUIDANCE);
+
+const SYSTEM_PROMPT_TEMPLATE = `You generate vocabulary study exercises for a spaced-repetition app.
 Given a target word and the original sentence/context it was found in, return EXACTLY one JSON object
 with this shape and nothing else (no markdown fences, no commentary):
 
@@ -52,9 +65,16 @@ with this shape and nothing else (no markdown fences, no commentary):
 
 Rules:
 - Output must be valid JSON, parseable with JSON.parse, and match the shape exactly.
-- Keep all sentences natural, concise, and appropriate for an intermediate-to-advanced English learner.
+- Keep all sentences natural and concise.
+- Target this learner level: {{CEFR_GUIDANCE}}
+- Pitch sentence complexity, the vocabulary used AROUND the target word, and how subtle the distractors are to that level. The target word itself stays as captured, whatever its difficulty.
 - Every "options" array must contain 4 distinct strings in randomized order, one of which equals "answer".
 - Every "explanation" should be 1-3 sentences: teach the WHY, not just restate the answer. Favor concrete memory hooks (etymology, imagery, a related word the learner likely already knows) over abstract description.`;
+
+function buildSystemPrompt(cefrLevel) {
+  const guidance = CEFR_GUIDANCE[cefrLevel] || CEFR_GUIDANCE.B2;
+  return SYSTEM_PROMPT_TEMPLATE.replace("{{CEFR_GUIDANCE}}", guidance);
+}
 
 const REQUIRED_TYPES = [
   "cloze",
@@ -74,7 +94,7 @@ function buildUserMessage(word, context) {
 }
 
 async function callClaude(word, context) {
-  const apiKey = await getApiKey();
+  const [apiKey, settings] = await Promise.all([getApiKey(), getSettings()]);
   if (!apiKey) {
     throw new Error("No API key configured");
   }
@@ -90,7 +110,7 @@ async function callClaude(word, context) {
     body: JSON.stringify({
       model: MODEL,
       max_tokens: 4096,
-      system: SYSTEM_PROMPT,
+      system: buildSystemPrompt(settings.cefrLevel),
       messages: [{ role: "user", content: buildUserMessage(word, context) }],
     }),
   });

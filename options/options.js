@@ -1,8 +1,10 @@
 import { getApiKey, setApiKey, getSettings, setSettings, clearAllData, getAllWords } from "../background/storage.js";
+import { GOAL_KEYS, isGoalUnlocked } from "../background/srs.js";
 
 const apiKeyInput = document.getElementById("apiKey");
 const dailyCapInput = document.getElementById("dailyCap");
 const dailyGoalInput = document.getElementById("dailyGoal");
+const cefrLevelSelect = document.getElementById("cefrLevel");
 const saveBtn = document.getElementById("saveBtn");
 const status = document.getElementById("status");
 const clearDataBtn = document.getElementById("clearDataBtn");
@@ -18,6 +20,7 @@ async function load() {
   if (apiKey) apiKeyInput.value = apiKey;
   dailyCapInput.value = settings.dailyCaptureCap;
   dailyGoalInput.value = settings.dailyReviewGoal;
+  cefrLevelSelect.value = settings.cefrLevel;
   await renderWordList();
 }
 
@@ -27,7 +30,7 @@ async function save() {
   const goal = Math.max(1, Math.min(200, Number(dailyGoalInput.value) || 10));
 
   await setApiKey(key);
-  await setSettings({ dailyCaptureCap: cap, dailyReviewGoal: goal });
+  await setSettings({ dailyCaptureCap: cap, dailyReviewGoal: goal, cefrLevel: cefrLevelSelect.value });
 
   status.textContent = "Saved.";
   setTimeout(() => (status.textContent = ""), 2000);
@@ -112,6 +115,13 @@ async function renderWordList() {
     statusBadge.className = `word-row-status ${cls}`;
     statusBadge.textContent = text;
     wordLine.appendChild(statusBadge);
+
+    const unlockedCount = GOAL_KEYS.filter((g) => isGoalUnlocked(word, g)).length;
+    const goalsBadge = document.createElement("span");
+    goalsBadge.className = "word-row-status";
+    goalsBadge.title = "Learning goals unlocked so far";
+    goalsBadge.textContent = `${unlockedCount}/${GOAL_KEYS.length} goals`;
+    wordLine.appendChild(goalsBadge);
     main.appendChild(wordLine);
 
     const contextEl = document.createElement("div");
