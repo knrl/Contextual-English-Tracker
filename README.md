@@ -4,6 +4,10 @@ A Chrome extension that turns words you meet while reading into spaced-repetitio
 
 **Status:** early, usable, single-user. Built for personal use — no backend, no account, nothing leaves your machine except the API calls you pay for.
 
+<p align="center">
+  <img src="docs/screenshots/review-answer.png" alt="A review card showing a multiple-choice question with the correct answer highlighted and an explanation of why each distractor is wrong" width="380">
+</p>
+
 ---
 
 ## Why
@@ -14,17 +18,11 @@ Most vocabulary apps drill words stripped of context, and most of them test you 
 
 - **Zero-friction capture** — highlight, right-click, "Save Word". An in-page toast confirms what was captured and offers Undo.
 - **Context is preserved** — the surrounding sentence is stored with the word and fed to the AI, so exercises use the word the way *you* met it.
-- **Eight exercise types** across four learning goals:
-
-  | Goal | Exercise types |
-  | --- | --- |
-  | Memorization | Cloze Deletion, Definition Match |
-  | Grammar | The Editor, Correct Form |
-  | Paraphrase | Paraphrase Rewrite, Synonym Trap |
-  | Usage | Creative Production, Scenario Response |
-
-- **Per-goal spaced repetition** — SM-2 runs independently for each of the four goals, so a word isn't "learned" until you can handle it in all four ways.
+- **Eight exercise types** across four learning goals, from recognition through to production.
+- **Per-goal spaced repetition** — SM-2 runs independently for each goal, so a word isn't "learned" until you can handle it in all four ways.
+- **Difficulty ramps** — goals unlock in order, so a brand-new word is never thrown at you as an open-ended writing task.
 - **Explanations, not just answers** — every exercise reveals *why* the answer is right, with memory hooks and notes on what makes distractors wrong.
+- **Pitched at your level** — set your CEFR level (A2–C2) and generated material is calibrated to it.
 - **Hover for meaning** — stuck before you even start? Hover the word to see its definition and part of speech without revealing the answer.
 - **Daily goals and streaks** — a capture cap to stop over-collecting, a review goal with a progress bar, and a streak counter.
 - **Word list** — see, inspect and delete everything you've saved.
@@ -47,23 +45,88 @@ Without a key the extension still captures words and falls back to a basic cloze
 3. Click **Load unpacked** and select the cloned folder.
 4. Open the extension's **Settings** (via the popup or the extensions page) and paste in your Anthropic API key.
 
-## Usage
+## How to use it
 
-**Capture** — highlight a word on any page, right-click, choose **Save Word**. A toast confirms the word and the captured context, with an Undo link.
+### 1. Save a word while you read
 
-**Review** — click the toolbar icon. The badge shows how many reviews are due. For each card:
+Highlight any word on any page, right-click, and choose **Save Word**.
 
-| Key | Action |
-| --- | --- |
-| `Space` | Reveal the answer and explanation |
-| `1` | Fail — reset this goal's schedule |
-| `2` | Hard |
-| `3` | Good |
-| `4` | Easy — push the interval out aggressively |
+![An article with the word "serendipitous" highlighted, and a dark confirmation toast in the corner reading "Saved serendipitous" with the captured sentence and an Undo link](docs/screenshots/capture.png)
 
-Cleared the queue and still want to practise? **Review more words** pulls in items that aren't due yet.
+A toast confirms exactly what was captured — the word *and* the sentence around it — so you can tell at a glance if it grabbed the wrong thing. **Undo** removes it immediately.
 
-**Settings** lets you set your API key, the daily capture cap and review goal, browse and delete saved words, regenerate exercises for existing words after a prompt change, and clear everything.
+Behind the scenes the extension sends that word and sentence to Claude and builds eight exercises from them. That happens once, in the background, so reviewing is never held up waiting on the API.
+
+### 2. Review when words come due
+
+Click the toolbar icon. The badge on it tells you how many reviews are waiting.
+
+<p align="center">
+  <img src="docs/screenshots/review-question.png" alt="The review popup showing a Definition Match question with four options" width="380">
+</p>
+
+Each card names the word, which learning goal it's testing, and how far that word has progressed. Answer it in your head, then reveal:
+
+<p align="center">
+  <img src="docs/screenshots/review-answer.png" alt="The same card after revealing, showing the correct option highlighted in green and an explanation of why the other options are wrong" width="380">
+</p>
+
+You get the answer *and* the reasoning — why it's right, and why the near-misses aren't.
+
+Then grade yourself honestly. That's what drives the schedule:
+
+| Key | Button | What it does |
+| --- | --- | --- |
+| `Space` | Show Answer | Reveals the answer and explanation |
+| `1` | Fail | You didn't know it — resets this goal, back tomorrow |
+| `2` | Hard | You got there, but it was a struggle |
+| `3` | Good | You knew it — the normal path |
+| `4` | Easy | Instant recall — pushes the next review out further |
+
+### 3. Stuck? Check the meaning first
+
+Hover the word (or tab to it) to see its definition and part of speech without giving up and revealing the answer.
+
+<p align="center">
+  <img src="docs/screenshots/hover-meaning.png" alt="A cloze exercise with a tooltip above the word showing its part of speech and definition" width="380">
+</p>
+
+This is deliberately unrestricted — grading is on the honour system, so if you needed the hint, grade yourself **Hard** and the schedule stays honest.
+
+### 4. Words unlock gradually
+
+A new word starts with only one goal active: **memorization**. Pass it and **grammar** unlocks, then **paraphrase**, then **usage**. So you meet a word as a recognition task before you're ever asked to produce it in a sentence of your own.
+
+| Goal | Exercise types | What it tests |
+| --- | --- | --- |
+| Memorization | Cloze Deletion, Definition Match | Do you know what it means? |
+| Grammar | The Editor, Correct Form | Can you use the right form? |
+| Paraphrase | Paraphrase Rewrite, Synonym Trap | Do you know its precise shade of meaning? |
+| Usage | Creative Production, Scenario Response | Can you use it yourself, unprompted? |
+
+Cleared today's queue and still want to practise? **Review more words** pulls in items that aren't due yet.
+
+### 5. Adjust it to you
+
+<p align="center">
+  <img src="docs/screenshots/settings.png" alt="The settings page showing API key, daily capture cap, daily review goal, English level dropdown, and a list of saved words" width="620">
+</p>
+
+Settings is where you:
+
+- paste your **Anthropic API key**
+- set your **English level** (A2–C2) — this controls how complex the generated sentences are and how subtle the wrong answers get
+- cap how many words you can save per day, and set a daily review target
+- browse everything you've saved, with its source page, and delete individual words
+- **Regenerate all exercises** — rebuilds every word's exercises with the current settings, e.g. after changing your English level
+
+### Dark mode
+
+Follows your system theme automatically.
+
+<p align="center">
+  <img src="docs/screenshots/dark-mode.png" alt="The review popup in dark mode showing a cloze exercise with its explanation revealed" width="380">
+</p>
 
 ## How it works
 

@@ -94,7 +94,7 @@ The dashboard asks you to justify each permission. Suggested wording:
 ## Assets still needed
 
 - [ ] Store icon, 128×128 PNG — the current `icons/icon128.png` is a placeholder and should be replaced with real artwork before submission
-- [ ] At least one screenshot, 1280×800 or 640×400. Worth capturing: the review card with an exercise and revealed explanation; the capture toast on a real article; the Settings page with the word list
+- [ ] Screenshots at 1280×800 or 640×400. The README shots in `docs/screenshots/` cover the right moments (capture toast on an article, review card with revealed explanation, hover tooltip, settings with the word list) but are at the popup's native size — they need re-shooting or padding onto a 1280×800 canvas to meet the store's fixed dimensions
 - [ ] Optional: small promo tile, 440×280
 
 ## Pre-submission checklist
