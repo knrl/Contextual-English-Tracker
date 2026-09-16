@@ -1,0 +1,43 @@
+name: Feature request
+description: Suggest an idea or improvement
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the situation you run into, rather than jumping straight to a solution.
+      placeholder: "When I review a word I can't tell whether..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: What would you like to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you've considered
+      description: Including "I currently work around it by..."
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of the extension?
+      options:
+        - Capture (right-click → Save Word)
+        - Review flow / exercise types
+        - Spaced repetition scheduling
+        - Settings / word list
+        - Something else
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        **Note on scope:** this is a small, deliberately dependency-free personal tool with no backend. Suggestions that keep it that way are much more likely to land.

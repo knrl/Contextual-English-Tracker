@@ -1,0 +1,78 @@
+name: Bug report
+description: Something isn't working as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. The most useful thing you can include is the error text from the service worker console — see the last field for how to get it.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to '...'
+        2. Highlight '...' and right-click → Save Word
+        3. Open the popup
+        4. See error
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of the extension?
+      options:
+        - Capture (right-click → Save Word)
+        - Review (the popup)
+        - Exercise generation / Claude API
+        - Settings / word list
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: chrome-version
+    attributes:
+      label: Chrome version
+      description: From `chrome://version`
+      placeholder: "141.0.7390.55"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "Windows 11 / macOS 15 / Ubuntu 24.04"
+    validations:
+      required: true
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Service worker console output
+      description: |
+        Go to `chrome://extensions`, find Contextual English Tracker, and click the **service worker** link to open its DevTools. Paste any errors from the Console tab here.
+
+        If the problem is in the popup, right-click inside the popup → Inspect, and paste errors from there too.
+      render: text
+
+  - type: checkboxes
+    id: api-key
+    attributes:
+      label: Before submitting
+      options:
+        - label: I have an Anthropic API key configured in Settings (or the bug happens without one, which is fine — just say so above)
+        - label: I have reloaded the extension from `chrome://extensions` since updating it
+        - label: I have removed any API keys or personal information from the logs I pasted
+          required: true
