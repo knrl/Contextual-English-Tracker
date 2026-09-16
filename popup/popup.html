@@ -46,7 +46,13 @@
       <div id="reviewCard" class="review-card hidden">
         <div class="review-card-top">
           <div class="progress" id="progress"></div>
-          <div class="word-badge" id="wordBadge"></div>
+          <div class="word-tooltip-anchor">
+            <button type="button" class="word-badge" id="wordBadge" aria-describedby="wordTooltip"></button>
+            <div class="word-tooltip hidden" id="wordTooltip" role="tooltip">
+              <div class="word-tooltip-pos" id="wordTooltipPos"></div>
+              <div class="word-tooltip-def" id="wordTooltipDef"></div>
+            </div>
+          </div>
         </div>
         <div class="goal-progress" id="goalProgress" title="Goals unlocked for this word"></div>
         <div class="exercise-scroll">

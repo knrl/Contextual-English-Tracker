@@ -22,10 +22,18 @@ async function runGeneration(word) {
   if (inFlightGeneration.has(word.id)) return;
   inFlightGeneration.add(word.id);
   try {
-    const { exercises, status, error } = await generateExercises(word.word, word.original_context);
+    const { exercises, wordInfo, status, error } = await generateExercises(word.word, word.original_context);
     if (error) console.error(`[Contextual English Tracker] AI generation failed for "${word.word}":`, error);
     const retryCount = status === "failed" ? (word.retryCount || 0) + 1 : 0;
-    await updateWord(word.id, { exercises, exercisesStatus: status, exercisesError: error || null, retryCount });
+    await updateWord(word.id, {
+      exercises,
+      // Keep any previously generated wordInfo if this run failed to produce
+      // one, so a transient failure doesn't wipe a working tooltip.
+      wordInfo: wordInfo || word.wordInfo || null,
+      exercisesStatus: status,
+      exercisesError: error || null,
+      retryCount,
+    });
   } catch (err) {
     console.error(`[Contextual English Tracker] AI generation threw for "${word.word}":`, err);
     await updateWord(word.id, {

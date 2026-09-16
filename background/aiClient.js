@@ -22,6 +22,10 @@ Given a target word and the original sentence/context it was found in, return EX
 with this shape and nothing else (no markdown fences, no commentary):
 
 {
+  "wordInfo": {
+    "definition": "<a short, plain-language meaning of the target word AS IT IS USED in the given context, one sentence, written so a learner could understand it at a glance>",
+    "partOfSpeech": "<the word's part of speech in this context: noun, verb, adjective, adverb, preposition, conjunction, pronoun, or interjection>"
+  },
   "cloze": {
     "sentence": "<the original sentence with the target word replaced by ____>",
     "explanation": "<a short explanation of the word's meaning and a memory hook (e.g. root/origin, a vivid mental image, or a related word) to help it stick>"
@@ -157,7 +161,13 @@ function parseExercises(rawText) {
       throw new Error(`Malformed multiple-choice exercise: ${key}`);
     }
   }
-  return parsed;
+
+  // wordInfo isn't an exercise — split it out so `exercises` stays a clean
+  // map of exercise type -> exercise. Not treated as required: a missing
+  // definition should degrade the hover tooltip, not fail the whole
+  // generation and drop the user to the cloze-only fallback.
+  const { wordInfo, ...exercises } = parsed;
+  return { exercises, wordInfo: wordInfo || null };
 }
 
 function buildLocalFallback(word, context) {
@@ -177,12 +187,12 @@ export async function generateExercises(word, context) {
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const rawText = await callClaude(word, context);
-      const exercises = parseExercises(rawText);
-      return { exercises, status: "ready", error: null };
+      const { exercises, wordInfo } = parseExercises(rawText);
+      return { exercises, wordInfo, status: "ready", error: null };
     } catch (err) {
       lastError = err?.message || String(err);
       if (attempt === 1) {
-        return { exercises: buildLocalFallback(word, context), status: "failed", error: lastError };
+        return { exercises: buildLocalFallback(word, context), wordInfo: null, status: "failed", error: lastError };
       }
     }
   }

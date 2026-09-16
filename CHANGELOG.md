@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Goal unlocking** — new words now start with only the *memorization* goal active. Passing a goal (grading it Good or Easy for the first time) unlocks the next one in the ramp: memorization → grammar → paraphrase → usage. Recognition tasks therefore always come before production tasks, instead of a brand-new word immediately surfacing as an open-ended Scenario Response.
 - **English level setting (CEFR)** — an A2–C2 dropdown in Settings that steers how complex generated sentences are and how subtle the wrong answers get. Applies to newly generated exercises; use "Regenerate all exercises" to apply it to words you already have.
 - **Goal progress indicators** — the review card shows which goal the current exercise belongs to and how many are unlocked; the word list shows an `n/4 goals` badge per word.
+- **Hover for meaning** — hovering (or keyboard-focusing) the word on a review card reveals its definition and part of speech, for when you want to remind yourself what it means before attempting the exercise. Generated alongside the exercises at no extra API call; words captured before this show no tooltip until regenerated.
 
 ### Changed
 

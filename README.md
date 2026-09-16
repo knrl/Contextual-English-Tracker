@@ -25,6 +25,7 @@ Most vocabulary apps drill words stripped of context, and most of them test you 
 
 - **Per-goal spaced repetition** — SM-2 runs independently for each of the four goals, so a word isn't "learned" until you can handle it in all four ways.
 - **Explanations, not just answers** — every exercise reveals *why* the answer is right, with memory hooks and notes on what makes distractors wrong.
+- **Hover for meaning** — stuck before you even start? Hover the word to see its definition and part of speech without revealing the answer.
 - **Daily goals and streaks** — a capture cap to stop over-collecting, a review goal with a progress bar, and a streak counter.
 - **Word list** — see, inspect and delete everything you've saved.
 - **Dark mode**, keyboard shortcuts (`Space` to reveal, `1`–`4` to grade), and a due-count badge on the toolbar icon.

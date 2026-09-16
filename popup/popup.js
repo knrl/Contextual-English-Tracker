@@ -10,6 +10,9 @@ const reviewCard = document.getElementById("reviewCard");
 const progressEl = document.getElementById("progress");
 const wordBadge = document.getElementById("wordBadge");
 const goalProgressEl = document.getElementById("goalProgress");
+const wordTooltip = document.getElementById("wordTooltip");
+const wordTooltipDef = document.getElementById("wordTooltipDef");
+const wordTooltipPos = document.getElementById("wordTooltipPos");
 const exerciseBody = document.getElementById("exerciseBody");
 const answerBox = document.getElementById("answerBox");
 const showAnswerBtn = document.getElementById("showAnswerBtn");
@@ -185,8 +188,36 @@ function renderCurrent() {
   progressEl.textContent = `${currentIndex + 1} / ${queue.length}`;
   const { word, goal, exerciseKey } = queue[currentIndex];
   wordBadge.textContent = word.word;
+  renderWordTooltip(word);
   renderGoalProgress(word, goal);
   renderExercise(word, exerciseKey);
+}
+
+// Hover/focus on the word badge reveals its meaning, for when you want to
+// remind yourself what the word means before attempting the exercise. No
+// restriction on which card types allow it — self-grading is on the honour
+// system, so peeking just means grading yourself accordingly.
+function renderWordTooltip(word) {
+  hideWordTooltip();
+  const info = word.wordInfo;
+  const definition = info?.definition?.trim();
+
+  // Older words generated before wordInfo existed have no definition; keep
+  // the badge inert rather than showing an empty tooltip.
+  wordBadge.classList.toggle("has-tooltip", !!definition);
+  wordTooltipDef.textContent = definition || "";
+  wordTooltipPos.textContent = info?.partOfSpeech?.trim() || "";
+  wordTooltipPos.classList.toggle("hidden", !info?.partOfSpeech?.trim());
+}
+
+function showWordTooltip() {
+  if (wordBadge.classList.contains("has-tooltip")) {
+    wordTooltip.classList.remove("hidden");
+  }
+}
+
+function hideWordTooltip() {
+  wordTooltip.classList.add("hidden");
 }
 
 // Shows which goal this exercise belongs to and how far the word has come
@@ -341,6 +372,11 @@ async function init() {
   showAnswerBtn.addEventListener("click", handleShowAnswer);
   reviewMoreBtn.addEventListener("click", () => reviewMore());
   document.addEventListener("keydown", handleKeydown);
+
+  wordBadge.addEventListener("mouseenter", showWordTooltip);
+  wordBadge.addEventListener("mouseleave", hideWordTooltip);
+  wordBadge.addEventListener("focus", showWordTooltip);
+  wordBadge.addEventListener("blur", hideWordTooltip);
 }
 
 init();
