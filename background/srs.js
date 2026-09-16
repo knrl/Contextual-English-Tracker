@@ -71,6 +71,18 @@ export function shuffle(items) {
   return result;
 }
 
+// Max review-log entries kept per word, oldest dropped first. Bounds storage
+// growth for a word reviewed for years while still giving the leech list and
+// weak-goal detection enough history to be meaningful.
+const MAX_REVIEW_LOG_ENTRIES = 50;
+
+// Appends one entry to a word's review log and enforces the cap. Returns the
+// new array; callers persist it as a patch alongside goalProgress.
+export function appendReviewLog(word, entry) {
+  const log = [...(word.reviewLog || []), entry];
+  return log.slice(-MAX_REVIEW_LOG_ENTRIES);
+}
+
 // Applies a grade to a single goal's schedule and returns the updated
 // goalProgress object (all goals, with only `goal` changed) — callers persist
 // this as a patch to the word's goalProgress field.
@@ -142,4 +154,56 @@ export function applyGradeToGoal(word, goal, grade) {
 export function isWordLearned(word) {
   const progress = word.goalProgress || {};
   return GOAL_KEYS.every((goal) => (progress[goal]?.repetitions || 0) > 0);
+}
+
+// A word graduates to "mastered" once every goal's interval has grown past
+// this many days — meaning you've consistently graded Good/Easy across
+// several reviews on all four goals, not just passed each once. Mastered
+// words leave the normal due queue (see isDueForSpotCheck) but aren't
+// deleted, so a fading memory still gets caught eventually.
+const MASTERY_INTERVAL_DAYS = 30;
+
+export function isWordMastered(word) {
+  const progress = word.goalProgress || {};
+  return GOAL_KEYS.every((goal) => (progress[goal]?.interval_days || 0) >= MASTERY_INTERVAL_DAYS);
+}
+
+// A "leech": a word that keeps failing the same goal despite repeated
+// review. Threshold of 3 recent fails on one goal (within the capped review
+// log) flags it for the leech list, independent of whatever the current SM-2
+// interval says — a word can look "progressing" by interval alone while
+// still being the thing you get wrong every time you see it.
+const LEECH_FAIL_THRESHOLD = 3;
+
+export function getLeechGoals(word) {
+  const log = word.reviewLog || [];
+  const failsByGoal = {};
+  for (const entry of log) {
+    if (entry.grade === GRADES.FAIL) {
+      failsByGoal[entry.goal] = (failsByGoal[entry.goal] || 0) + 1;
+    }
+  }
+  return Object.entries(failsByGoal)
+    .filter(([, count]) => count >= LEECH_FAIL_THRESHOLD)
+    .map(([goal]) => goal);
+}
+
+export function isLeech(word) {
+  return getLeechGoals(word).length > 0;
+}
+
+// Per-goal accuracy across a word's logged reviews: { [goal]: { passed,
+// total } }. Used both for a single word's weak-goal breakdown and, summed
+// across all words, for an overall "which goal type gives you the most
+// trouble" view.
+export function goalAccuracy(word) {
+  const log = word.reviewLog || [];
+  const stats = {};
+  for (const goal of GOAL_KEYS) stats[goal] = { passed: 0, total: 0 };
+  for (const entry of log) {
+    if (!stats[entry.goal]) continue;
+    stats[entry.goal].total += 1;
+    if (entry.grade >= GRADES.GOOD) stats[entry.goal].passed += 1;
+  }
+  return stats;
 }

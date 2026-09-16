@@ -11,6 +11,7 @@ export const GOALS = {
 
 export const EXERCISE_TYPES = {
   cloze: { goal: GOALS.MEMORIZATION, label: "Cloze Deletion" },
+  typedRecall: { goal: GOALS.MEMORIZATION, label: "Typed Recall" },
   definitionMatch: { goal: GOALS.MEMORIZATION, label: "Definition Match" },
   editor: { goal: GOALS.GRAMMAR, label: "The Editor" },
   correctForm: { goal: GOALS.GRAMMAR, label: "Correct Form" },
@@ -28,6 +29,7 @@ export function getDisplayAnswer(key, exercise, word) {
   let answer;
   switch (key) {
     case "cloze":
+    case "typedRecall":
       answer = word;
       break;
     case "definitionMatch":

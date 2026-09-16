@@ -1,4 +1,4 @@
-import { saveWord, updateWord, getAllWords, findWordByText, getSettings, getDailyStats, recordCapture, trimContext } from "./storage.js";
+import { saveWord, updateWord, getWord, getAllWords, findWordByText, getSettings, getDailyStats, recordCapture, trimContext } from "./storage.js";
 import { generateExercises } from "./aiClient.js";
 import { defaultGoalProgress } from "./srs.js";
 
@@ -144,39 +144,28 @@ async function showToastOnTab(tabId, payload) {
   chrome.tabs.sendMessage(tabId, { type: "SHOW_CAPTURE_TOAST", payload }).catch(() => {});
 }
 
-export async function handleSaveWord(info, tab) {
-  const selectedWord = (info.selectionText || "").trim();
-  if (!selectedWord || !tab?.id) return;
-
+// Shared by right-click capture and manual add in Settings: builds the word
+// record, saves it, and runs generation. Returns a result the caller can use
+// for its own feedback (toast vs. a form status message) rather than baking
+// UI concerns in here.
+async function captureWord({ word: selectedWord, context, sourceUrl }) {
   const stats = await getDailyStats();
   const settings = await getSettings();
 
   if (stats.wordsCapturedToday >= settings.dailyCaptureCap) {
-    await flashBadge("!", "#d33");
-    return;
+    return { ok: false, reason: "cap-reached" };
   }
 
   const duplicate = await findWordByText(selectedWord);
   if (duplicate) {
-    await flashBadge("=", "#e08a2b");
-    await showToastOnTab(tab.id, { word: selectedWord, context: duplicate.original_context, duplicate: true });
-    return;
+    return { ok: false, reason: "duplicate", existing: duplicate };
   }
-
-  let extracted;
-  try {
-    extracted = await extractContextFromTab(tab.id, selectedWord);
-  } catch {
-    extracted = null;
-  }
-
-  const context = trimContext(extracted?.context || selectedWord);
 
   const word = {
     id: `${Date.now()}`,
     word: selectedWord,
     original_context: context,
-    source_url: tab.url || "",
+    source_url: sourceUrl || "",
     date_added: new Date().toISOString(),
     goalProgress: defaultGoalProgress(),
     exercises: null,
@@ -185,8 +174,6 @@ export async function handleSaveWord(info, tab) {
 
   await saveWord(word);
   await recordCapture();
-  await flashBadge("✓", "#2a9d3f");
-  await showToastOnTab(tab.id, { word: selectedWord, context, wordId: word.id, duplicate: false });
 
   // Awaited (not fire-and-forget): MV3 service workers can be torn down as
   // soon as Chrome no longer sees tracked work pending. A detached
@@ -196,4 +183,90 @@ export async function handleSaveWord(info, tab) {
   // (run on service worker startup and whenever the popup opens) is a
   // backstop in case the worker is killed anyway before this resolves.
   await runGeneration(word);
+
+  return { ok: true, word };
+}
+
+export async function handleSaveWord(info, tab) {
+  const selectedWord = (info.selectionText || "").trim();
+  if (!selectedWord || !tab?.id) return;
+
+  // Cheap pre-check so a capped or duplicate word skips extracting page
+  // context entirely (no point injecting a content script for a save we're
+  // about to reject). captureWord() re-checks the cap regardless, since a
+  // second capture could land between this check and the save.
+  const stats = await getDailyStats();
+  const settings = await getSettings();
+  if (stats.wordsCapturedToday >= settings.dailyCaptureCap) {
+    await flashBadge("!", "#d33");
+    return;
+  }
+
+  let extracted;
+  try {
+    extracted = await extractContextFromTab(tab.id, selectedWord);
+  } catch {
+    extracted = null;
+  }
+  const context = trimContext(extracted?.context || selectedWord);
+
+  const result = await captureWord({ word: selectedWord, context, sourceUrl: tab.url });
+
+  if (!result.ok && result.reason === "duplicate") {
+    await flashBadge("=", "#e08a2b");
+    await showToastOnTab(tab.id, { word: selectedWord, context: result.existing.original_context, duplicate: true });
+    return;
+  }
+  if (!result.ok) {
+    await flashBadge("!", "#d33");
+    return;
+  }
+
+  await flashBadge("✓", "#2a9d3f");
+  await showToastOnTab(tab.id, { word: selectedWord, context, wordId: result.word.id, duplicate: false });
+}
+
+// Sentinel the AI prompt recognizes as "no captured sentence — invent one"
+// (see the system prompt's final rule in aiClient.js). Passing an instruction
+// like "write a sentence using X" as if it were the original context would
+// make cloze.sentence blank out the instruction itself, not an example. This
+// is what's sent to the model — never shown to the user (see
+// PLACEHOLDER_CONTEXT below for what's stored/displayed meanwhile).
+const NO_CONTEXT_SENTINEL = "(none provided)";
+
+// Shown in the word list while an invented sentence is pending, and left in
+// place if generation ends up failing — so a failed manual add reads as
+// "no example sentence yet" rather than the AI-facing sentinel leaking
+// through, or a nonsensical "word (word)" from the local fallback's
+// "____ (word)" cloze template.
+const PLACEHOLDER_CONTEXT = "No example sentence yet.";
+
+// Adds a word from the Settings "Add word" form rather than a page capture —
+// same pipeline (dedupe, cap, save, generate), but with no source page to
+// extract context from.
+export async function addWordManually(word, context) {
+  const trimmedWord = word.trim();
+  if (!trimmedWord) return { ok: false, reason: "empty" };
+
+  const trimmedContext = context?.trim();
+  const result = await captureWord({
+    word: trimmedWord,
+    context: trimmedContext || NO_CONTEXT_SENTINEL,
+    sourceUrl: "",
+  });
+  if (!result.ok || trimmedContext) return result;
+
+  // No context was supplied, so original_context is currently the raw AI
+  // sentinel — replace it with a user-facing placeholder immediately, then
+  // overwrite that with the AI's invented sentence if generation succeeds.
+  await updateWord(result.word.id, { original_context: PLACEHOLDER_CONTEXT });
+
+  const generated = await getWord(result.word.id);
+  const clozeSentence = generated?.exercisesStatus === "ready" ? generated?.exercises?.cloze?.sentence : null;
+  if (clozeSentence) {
+    const inventedSentence = clozeSentence.replace("____", trimmedWord);
+    await updateWord(result.word.id, { original_context: trimContext(inventedSentence) });
+  }
+
+  return result;
 }

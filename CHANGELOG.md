@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **English level setting (CEFR)** — an A2–C2 dropdown in Settings that steers how complex generated sentences are and how subtle the wrong answers get. Applies to newly generated exercises; use "Regenerate all exercises" to apply it to words you already have.
 - **Goal progress indicators** — the review card shows which goal the current exercise belongs to and how many are unlocked; the word list shows an `n/4 goals` badge per word.
 - **Hover for meaning** — hovering (or keyboard-focusing) the word on a review card reveals its definition and part of speech, for when you want to remind yourself what it means before attempting the exercise. Generated alongside the exercises at no extra API call; words captured before this show no tooltip until regenerated.
+- **Review history** — every grade is now logged per word (goal, exercise type, grade, timestamp), capped at the last 50 reviews per word. This is what the leech list, weak-goal detection, and mastery all read from.
+- **Mastered words** — a word graduates to "Mastered" once every goal's SM-2 interval has grown past 30 days. Mastered words leave the normal daily queue but still get a rare spot-check, labeled as such on the review card, so a genuinely forgotten word doesn't silently vanish from review forever.
+- **Leech detection** — a word that fails the same goal 3+ times shows a "Needs work" badge in the word list, so the words actually costing you time are visible instead of buried in the queue.
+- **Typed Recall** — a new, harder Memorization exercise: type the missing word instead of choosing from a blank or picking from options. Checked against the answer immediately, no API call.
+- **AI-graded free-text answers (optional)** — Paraphrase Rewrite, Creative Production, and Scenario Response still default to "compose in your head, then reveal a model example" at no cost. You can now also type your answer and click "Get AI feedback" for a real pass/fail verdict with specific feedback, one API call per grading.
+- **Manual word entry** — add a word directly from Settings without capturing it from a page, for words you meet offline. Leave the example sentence blank and the AI writes one for you.
+- **Source grouping** — the word list can group words by the page they were captured from ("Grouped by source" / "All words" toggle), so words met together in one article stay visually associated.
 
 ### Changed
 
@@ -22,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Notes
 
 - Words captured before this change keep all four goals active — unlocking applies to new captures only, and no stored data is rewritten.
+- Review history starts empty for existing words; the leech list and mastery detection only reflect reviews logged from this version onward.
 
 ## [0.1.0] - 2026-09-16
 

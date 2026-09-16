@@ -30,6 +30,10 @@ with this shape and nothing else (no markdown fences, no commentary):
     "sentence": "<the original sentence with the target word replaced by ____>",
     "explanation": "<a short explanation of the word's meaning and a memory hook (e.g. root/origin, a vivid mental image, or a related word) to help it stick>"
   },
+  "typedRecall": {
+    "sentence": "<a NEW sentence, different from the cloze one, using a blank ____ where the target word belongs, with enough surrounding context that a learner who knows the word can recall and TYPE it unaided (harder than cloze: no options to recognize from)>",
+    "explanation": "<a short explanation of the word's meaning and a memory hook, similar in spirit to cloze's but can reuse or vary the hook>"
+  },
   "definitionMatch": {
     "definition": "<a concise dictionary-style definition of the target word, without using the word itself>",
     "options": ["<target word>", "<plausible distractor word 1>", "<distractor 2>", "<distractor 3>"],
@@ -73,7 +77,8 @@ Rules:
 - Target this learner level: {{CEFR_GUIDANCE}}
 - Pitch sentence complexity, the vocabulary used AROUND the target word, and how subtle the distractors are to that level. The target word itself stays as captured, whatever its difficulty.
 - Every "options" array must contain 4 distinct strings in randomized order, one of which equals "answer".
-- Every "explanation" should be 1-3 sentences: teach the WHY, not just restate the answer. Favor concrete memory hooks (etymology, imagery, a related word the learner likely already knows) over abstract description.`;
+- Every "explanation" should be 1-3 sentences: teach the WHY, not just restate the answer. Favor concrete memory hooks (etymology, imagery, a related word the learner likely already knows) over abstract description.
+- If "Original context" is exactly "(none provided)", the word was added manually with no captured sentence: invent one natural example sentence yourself and use that as if it were the original context throughout, including for "cloze.sentence".`;
 
 function buildSystemPrompt(cefrLevel) {
   const guidance = CEFR_GUIDANCE[cefrLevel] || CEFR_GUIDANCE.B2;
@@ -82,6 +87,7 @@ function buildSystemPrompt(cefrLevel) {
 
 const REQUIRED_TYPES = [
   "cloze",
+  "typedRecall",
   "definitionMatch",
   "editor",
   "correctForm",
@@ -97,8 +103,11 @@ function buildUserMessage(word, context) {
   return `Target word: "${word}"\nOriginal context: "${context}"`;
 }
 
-async function callClaude(word, context) {
-  const [apiKey, settings] = await Promise.all([getApiKey(), getSettings()]);
+// Low-level call shared by exercise generation and free-text grading: sends
+// one system+user message pair to Claude and returns the raw text response.
+// Callers own their own prompt shape and parsing.
+async function callClaudeRaw(systemPrompt, userMessage, maxTokens) {
+  const apiKey = await getApiKey();
   if (!apiKey) {
     throw new Error("No API key configured");
   }
@@ -113,9 +122,9 @@ async function callClaude(word, context) {
     },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 4096,
-      system: buildSystemPrompt(settings.cefrLevel),
-      messages: [{ role: "user", content: buildUserMessage(word, context) }],
+      max_tokens: maxTokens,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userMessage }],
     }),
   });
 
@@ -142,6 +151,11 @@ async function callClaude(word, context) {
     );
   }
   return text;
+}
+
+async function callClaude(word, context) {
+  const settings = await getSettings();
+  return callClaudeRaw(buildSystemPrompt(settings.cefrLevel), buildUserMessage(word, context), 4096);
 }
 
 function parseExercises(rawText) {
@@ -195,5 +209,47 @@ export async function generateExercises(word, context) {
         return { exercises: buildLocalFallback(word, context), wordInfo: null, status: "failed", error: lastError };
       }
     }
+  }
+}
+
+// Grades a free-text answer for one of the open-ended production types
+// (paraphraseRewrite, creative, scenarioResponse). Optional: the default for
+// these types is still "compose in your head, then reveal a model example"
+// (no API call, no cost) — this is only invoked if the user chooses to type
+// an answer and asks for feedback on it.
+const GRADING_SYSTEM_PROMPT = `You grade a language learner's free-text answer to a vocabulary exercise.
+Return EXACTLY one JSON object and nothing else (no markdown fences, no commentary):
+
+{
+  "correct": <true if the answer correctly and naturally uses the target word for this exercise, false otherwise>,
+  "feedback": "<1-2 sentences of specific, encouraging feedback: what worked, and if not fully correct, what to fix>"
+}
+
+Grading should be lenient on grammar/spelling slips but strict on whether the target word is used with its correct meaning and, where the exercise specifies one, whether the instruction was actually followed (e.g. a paraphrase must not reuse the target word).`;
+
+function buildGradingUserMessage(word, exerciseType, prompt, userAnswer) {
+  return `Target word: "${word}"\nExercise type: ${exerciseType}\nExercise prompt given to the learner: "${prompt}"\nLearner's answer: "${userAnswer}"`;
+}
+
+function parseGradingResponse(rawText) {
+  const cleaned = rawText.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  const parsed = JSON.parse(cleaned);
+  if (typeof parsed.correct !== "boolean" || typeof parsed.feedback !== "string") {
+    throw new Error("Malformed grading response");
+  }
+  return parsed;
+}
+
+export async function gradeFreeTextAnswer(word, exerciseType, prompt, userAnswer) {
+  try {
+    const rawText = await callClaudeRaw(
+      GRADING_SYSTEM_PROMPT,
+      buildGradingUserMessage(word, exerciseType, prompt, userAnswer),
+      512
+    );
+    const { correct, feedback } = parseGradingResponse(rawText);
+    return { ok: true, correct, feedback };
+  } catch (err) {
+    return { ok: false, error: err?.message || String(err) };
   }
 }

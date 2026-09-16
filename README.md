@@ -16,16 +16,18 @@ Most vocabulary apps drill words stripped of context, and most of them test you 
 
 ## Features
 
-- **Zero-friction capture** — highlight, right-click, "Save Word". An in-page toast confirms what was captured and offers Undo.
+- **Zero-friction capture** — highlight, right-click, "Save Word". An in-page toast confirms what was captured and offers Undo. Duplicate words are detected automatically.
 - **Context is preserved** — the surrounding sentence is stored with the word and fed to the AI, so exercises use the word the way *you* met it.
-- **Eight exercise types** across four learning goals, from recognition through to production.
+- **Nine exercise types** across four learning goals, from recognition through to production — including a typed recall variant that's harder than a simple fill-in-the-blank.
 - **Per-goal spaced repetition** — SM-2 runs independently for each goal, so a word isn't "learned" until you can handle it in all four ways.
 - **Difficulty ramps** — goals unlock in order, so a brand-new word is never thrown at you as an open-ended writing task.
 - **Explanations, not just answers** — every exercise reveals *why* the answer is right, with memory hooks and notes on what makes distractors wrong.
+- **Optional AI-graded answers** — for open-ended exercises, type your own answer and get real feedback instead of just a model example.
 - **Pitched at your level** — set your CEFR level (A2–C2) and generated material is calibrated to it.
 - **Hover for meaning** — stuck before you even start? Hover the word to see its definition and part of speech without revealing the answer.
+- **Review history** — every grade is logged, so the app can tell you which words you keep failing (leeches) and which have graduated to "Mastered."
 - **Daily goals and streaks** — a capture cap to stop over-collecting, a review goal with a progress bar, and a streak counter.
-- **Word list** — see, inspect and delete everything you've saved.
+- **Word list, grouped by source** — see, inspect and delete everything you've saved, grouped by the page you found it on. Add words manually for anything you meet offline.
 - **Dark mode**, keyboard shortcuts (`Space` to reveal, `1`–`4` to grade), and a due-count badge on the toolbar icon.
 
 ## Requirements
@@ -99,17 +101,34 @@ A new word starts with only one goal active: **memorization**. Pass it and **gra
 
 | Goal | Exercise types | What it tests |
 | --- | --- | --- |
-| Memorization | Cloze Deletion, Definition Match | Do you know what it means? |
+| Memorization | Cloze Deletion, Typed Recall, Definition Match | Do you know what it means? |
 | Grammar | The Editor, Correct Form | Can you use the right form? |
 | Paraphrase | Paraphrase Rewrite, Synonym Trap | Do you know its precise shade of meaning? |
 | Usage | Creative Production, Scenario Response | Can you use it yourself, unprompted? |
 
 Cleared today's queue and still want to practise? **Review more words** pulls in items that aren't due yet.
 
-### 5. Adjust it to you
+### 5. Type it yourself, and get real feedback
+
+Some exercises are harder than a simple fill-in-the-blank. **Typed Recall** asks you to type the missing word from context, with nothing to recognise it from:
 
 <p align="center">
-  <img src="docs/screenshots/settings.png" alt="The settings page showing API key, daily capture cap, daily review goal, English level dropdown, and a list of saved words" width="620">
+  <img src="docs/screenshots/typed-recall.png" alt="A Typed Recall exercise with the word typed into a text box and a green 'Correct!' confirmation below it" width="380">
+</p>
+
+For open-ended exercises (Paraphrase Rewrite, Creative Production, Scenario Response), the default is still free: compose your answer in your head and reveal a model example. But if you'd rather write it out, type your answer and click **Get AI feedback** for a real verdict — one API call, only when you ask for it.
+
+### 6. The app remembers how it's going
+
+Every grade is logged. Two things fall out of that automatically:
+
+- **Mastered** — once a word's interval has grown past 30 days on all four goals, it graduates. It leaves the daily queue but still gets a rare spot-check, so a word you've genuinely forgotten doesn't vanish from review forever.
+- **Needs work** — a word that fails the same goal three or more times gets flagged, so the words actually costing you time are visible instead of buried in the queue.
+
+### 7. Adjust it to you, and add words you meet offline
+
+<p align="center">
+  <img src="docs/screenshots/word-list.png" alt="The settings page showing the Add a word form and a word list grouped by source, with Ready, Mastered, and Needs work badges" width="620">
 </p>
 
 Settings is where you:
@@ -117,7 +136,8 @@ Settings is where you:
 - paste your **Anthropic API key**
 - set your **English level** (A2–C2) — this controls how complex the generated sentences are and how subtle the wrong answers get
 - cap how many words you can save per day, and set a daily review target
-- browse everything you've saved, with its source page, and delete individual words
+- **add a word manually** — met one offline? Type it in, with or without an example sentence, and it goes through the same pipeline as a captured word
+- browse everything you've saved, **grouped by the page it came from**, with status badges (Ready, Mastered, Needs work) and a link back to the source
 - **Regenerate all exercises** — rebuilds every word's exercises with the current settings, e.g. after changing your English level
 
 ### Dark mode

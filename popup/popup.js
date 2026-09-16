@@ -1,5 +1,5 @@
 import { getAllWords, updateWord, getDailyStats, setDailyStats, getSettings } from "../background/storage.js";
-import { getDueGoalPairs, applyGradeToGoal, shuffle, isGoalUnlocked, GOAL_KEYS } from "../background/srs.js";
+import { getDueGoalPairs, applyGradeToGoal, appendReviewLog, shuffle, isGoalUnlocked, isWordMastered, GOAL_KEYS } from "../background/srs.js";
 import { EXERCISE_TYPES, getDisplayAnswer, pickExerciseKeyForGoal } from "../background/exerciseTypes.js";
 
 const onboardingState = document.getElementById("onboardingState");
@@ -87,11 +87,12 @@ function renderSentence(sentenceText) {
   return el;
 }
 
-// Free-text types (paraphrase, creative, scenario response) no longer take
-// typed input — a typed answer was never read, graded, or stored, which is
-// worse than no input box at all. Instead: compose your answer in your head,
-// then Show Answer reveals a model example to self-grade against.
-function renderCompose(promptText, instructionText) {
+// Free-text types (paraphrase, creative, scenario response) default to no
+// typed input — the fast path is "compose in your head, then Show Answer
+// reveals a model example." Typing is optional: if you write something and
+// click "Get AI feedback," Claude grades it (one API call). Leaving the box
+// blank and using Show Answer costs nothing and behaves exactly as before.
+function renderCompose(promptText, instructionText, exerciseType, word) {
   const wrap = document.createElement("div");
   const promptEl = document.createElement("div");
   promptEl.className = "exercise-sentence";
@@ -105,22 +106,132 @@ function renderCompose(promptText, instructionText) {
     wrap.appendChild(instr);
   }
 
+  const canGrade = !!exerciseType && !!word;
+
   const composeHint = document.createElement("div");
   composeHint.className = "compose-prompt";
-  composeHint.textContent = "Compose your answer in your head, then reveal a model example.";
+  composeHint.textContent = canGrade
+    ? "Compose your answer in your head, then reveal a model example — or type it below for AI feedback."
+    : "Compose your answer in your head, then reveal a model example.";
   wrap.appendChild(composeHint);
+
+  if (canGrade) {
+    const textarea = document.createElement("textarea");
+    textarea.className = "compose-input";
+    textarea.id = "composeInput";
+    textarea.placeholder = "Optional: type your answer here for AI feedback…";
+    wrap.appendChild(textarea);
+
+    const gradeBtn = document.createElement("button");
+    gradeBtn.className = "grade-answer-btn";
+    gradeBtn.id = "composeGradeBtn";
+    gradeBtn.textContent = "Get AI feedback";
+    gradeBtn.addEventListener("click", () => handleGradeFreeText(word, exerciseType, promptText));
+    wrap.appendChild(gradeBtn);
+
+    const feedback = document.createElement("div");
+    feedback.className = "compose-feedback hidden";
+    feedback.id = "composeFeedback";
+    wrap.appendChild(feedback);
+  }
+
   return wrap;
 }
 
+async function handleGradeFreeText(word, exerciseType, prompt) {
+  const textarea = document.getElementById("composeInput");
+  const gradeBtn = document.getElementById("composeGradeBtn");
+  const feedback = document.getElementById("composeFeedback");
+  const userAnswer = textarea.value.trim();
+
+  if (!userAnswer) {
+    feedback.className = "compose-feedback incorrect";
+    feedback.textContent = "Type an answer first, or use Show Answer instead.";
+    return;
+  }
+
+  gradeBtn.disabled = true;
+  gradeBtn.textContent = "Grading…";
+  feedback.className = "compose-feedback hidden";
+
+  const result = await chrome.runtime
+    .sendMessage({ type: "GRADE_FREE_TEXT", word, exerciseType, prompt, userAnswer })
+    .catch(() => null);
+
+  gradeBtn.disabled = false;
+  gradeBtn.textContent = "Get AI feedback";
+
+  if (!result?.ok) {
+    feedback.className = "compose-feedback incorrect";
+    feedback.textContent = `Couldn't grade that: ${result?.error || "unknown error"}. Try Show Answer instead.`;
+    return;
+  }
+
+  feedback.className = `compose-feedback ${result.correct ? "correct" : "incorrect"}`;
+  feedback.textContent = result.feedback;
+}
+
+// A harder recall variant of cloze: type the word instead of just reading a
+// blanked sentence, so recognition ("does this look right") can't carry you
+// the way it can with a fill-in-place blank you never have to produce.
+function renderTypedRecall(sentenceText) {
+  const wrap = document.createElement("div");
+  const sentenceEl = document.createElement("div");
+  sentenceEl.className = "exercise-sentence";
+  sentenceEl.textContent = sentenceText;
+  wrap.appendChild(sentenceEl);
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "short-input";
+  input.id = "typedRecallInput";
+  input.placeholder = "Type the missing word…";
+  input.autocomplete = "off";
+  wrap.appendChild(input);
+
+  const checkBtn = document.createElement("button");
+  checkBtn.className = "check-answer-btn";
+  checkBtn.id = "typedRecallCheckBtn";
+  checkBtn.textContent = "Check";
+  wrap.appendChild(checkBtn);
+
+  const feedback = document.createElement("div");
+  feedback.className = "typed-recall-feedback hidden";
+  feedback.id = "typedRecallFeedback";
+  wrap.appendChild(feedback);
+
+  return wrap;
+}
+
+function checkTypedRecall(correctWord) {
+  const input = document.getElementById("typedRecallInput");
+  const feedback = document.getElementById("typedRecallFeedback");
+  if (!input || !feedback) return;
+
+  const typed = input.value.trim().toLowerCase();
+  const correct = typed.length > 0 && typed === correctWord.trim().toLowerCase();
+
+  feedback.textContent = correct ? "Correct!" : `Not quite — the answer is "${correctWord}".`;
+  feedback.className = `typed-recall-feedback ${correct ? "correct" : "incorrect"}`;
+  input.disabled = true;
+  document.getElementById("typedRecallCheckBtn").disabled = true;
+}
+
+// AI grading is only offered for the 3 genuinely open-ended types (no single
+// correct answer). correctForm reuses renderCompose's "compose then reveal"
+// layout too, but it has one exact right answer (ex.answer) — grading that
+// with the "is this a natural, correct use" prompt would be the wrong check,
+// so it renders without the type/word needed to enable the Grade button.
 const RENDERERS = {
   cloze: (ex) => renderSentence(ex.sentence || ""),
+  typedRecall: (ex) => renderTypedRecall(ex.sentence || ""),
   definitionMatch: (ex) => renderMultipleChoice(ex, ex.definition),
   editor: (ex) => renderSentence(ex.sentence),
-  correctForm: (ex) => renderCompose(ex.sentence, `Fill in the correct form of "${ex.baseWord}".`),
-  paraphraseRewrite: (ex) => renderCompose(ex.sentence, ex.instruction),
+  correctForm: (ex) => renderCompose(ex.sentence, `Fill in the correct form of "${ex.baseWord}".`, null, null),
+  paraphraseRewrite: (ex, word) => renderCompose(ex.sentence, ex.instruction, "paraphraseRewrite", word),
   synonymTrap: (ex) => renderMultipleChoice(ex, ex.sentence),
-  creative: (ex) => renderCompose(ex.prompt, null),
-  scenarioResponse: (ex) => renderCompose(ex.scenario, null),
+  creative: (ex, word) => renderCompose(ex.prompt, null, "creative", word),
+  scenarioResponse: (ex, word) => renderCompose(ex.scenario, null, "scenarioResponse", word),
 };
 
 const MULTIPLE_CHOICE_TYPES = new Set(["definitionMatch", "synonymTrap"]);
@@ -165,8 +276,16 @@ function renderExercise(word, exerciseKey) {
     exerciseBody.appendChild(pendingEl);
   }
 
-  const contentEl = RENDERERS[key](exercise);
+  const contentEl = RENDERERS[key](exercise, word.word);
   exerciseBody.appendChild(section(meta.label, contentEl));
+
+  if (key === "typedRecall") {
+    const check = () => checkTypedRecall(word.word);
+    document.getElementById("typedRecallCheckBtn").addEventListener("click", check);
+    document.getElementById("typedRecallInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") check();
+    });
+  }
 
   currentAnswer = getDisplayAnswer(key, exercise, word.word);
   currentExerciseForReveal = MULTIPLE_CHOICE_TYPES.has(key) ? exercise : null;
@@ -222,11 +341,14 @@ function hideWordTooltip() {
 
 // Shows which goal this exercise belongs to and how far the word has come
 // through the ramp, so a locked goal reads as "not yet" rather than as
-// missing content.
+// missing content. Mastered words are labelled as a spot-check rather than a
+// normal review, since otherwise a word you nailed months ago reappearing
+// unannounced reads as the app having forgotten your progress.
 function renderGoalProgress(word, goal) {
   const unlockedCount = GOAL_KEYS.filter((g) => isGoalUnlocked(word, g)).length;
   const label = goal.charAt(0).toUpperCase() + goal.slice(1);
-  goalProgressEl.textContent = `${label} · ${unlockedCount} of ${GOAL_KEYS.length} goals unlocked`;
+  const prefix = isWordMastered(word) ? "Spot-check · " : "";
+  goalProgressEl.textContent = `${prefix}${label} · ${unlockedCount} of ${GOAL_KEYS.length} goals unlocked`;
 }
 
 async function refreshStats() {
@@ -283,9 +405,15 @@ async function reviewMore(count = 5) {
 }
 
 async function handleGrade(grade) {
-  const { word, goal } = queue[currentIndex];
+  const { word, goal, exerciseKey } = queue[currentIndex];
   const goalProgress = applyGradeToGoal(word, goal, grade);
-  await updateWord(word.id, { goalProgress });
+  const reviewLog = appendReviewLog(word, {
+    timestamp: new Date().toISOString(),
+    goal,
+    exerciseType: exerciseKey,
+    grade,
+  });
+  await updateWord(word.id, { goalProgress, reviewLog });
   currentIndex += 1;
 
   const stats = await getDailyStats();
@@ -324,6 +452,7 @@ function handleShowAnswer() {
 
 function handleKeydown(e) {
   if (reviewCard.classList.contains("hidden")) return; // only while an exercise is actually showing
+  if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return; // let typed-recall/compose inputs receive normal keystrokes
 
   if (e.code === "Space") {
     e.preventDefault();

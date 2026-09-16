@@ -1,6 +1,7 @@
-import { registerContextMenu, handleSaveWord, retryPendingWords, retryWord, regenerateAllWords } from "./contextMenu.js";
+import { registerContextMenu, handleSaveWord, retryPendingWords, retryWord, regenerateAllWords, addWordManually } from "./contextMenu.js";
 import { deleteWord, getAllWords } from "./storage.js";
 import { getDueGoalPairs } from "./srs.js";
+import { gradeFreeTextAnswer } from "./aiClient.js";
 
 chrome.runtime.onInstalled.addListener(() => {
   registerContextMenu();
@@ -66,6 +67,17 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
   if (message?.type === "REFRESH_BADGE") {
     updateBadgeCount().then(() => sendResponse({ ok: true }));
+    return true;
+  }
+  if (message?.type === "ADD_WORD_MANUALLY" && message.word) {
+    addWordManually(message.word, message.context).then((result) => {
+      updateBadgeCount();
+      sendResponse(result);
+    });
+    return true;
+  }
+  if (message?.type === "GRADE_FREE_TEXT") {
+    gradeFreeTextAnswer(message.word, message.exerciseType, message.prompt, message.userAnswer).then(sendResponse);
     return true;
   }
 });
