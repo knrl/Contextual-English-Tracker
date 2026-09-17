@@ -1,15 +1,15 @@
 import { getApiKey, getSettings } from "./storage.js";
 
 const API_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-5";
+const MODEL = "claude-haiku-4-5";
 const ANTHROPIC_VERSION = "2023-06-01";
 
 // Per-level guidance injected into the prompt, so generated sentences and
 // distractors are pitched at the learner rather than at whatever level the
 // model defaults to.
 const CEFR_GUIDANCE = {
-  A2: "CEFR A2 (elementary). Use short, simple sentences and high-frequency everyday vocabulary. Distractors should be clearly different from the answer, not subtle.",
-  B1: "CEFR B1 (intermediate). Use straightforward sentences on familiar topics. Distractors may be related in meaning but should be distinguishable with some thought.",
+  A2: "CEFR A2 (elementary). This is the strictest level — err on the side of TOO simple, never too hard. Every sentence: under 10 words, one clause, one idea, present or simple past tense only. Use only the ~1000 most common English words for everything except the target word itself (no idioms, no phrasal verbs, no abstract nouns, no subordinate clauses like 'although' or 'despite'). If you can't express something that simply, pick a more concrete, everyday scenario instead. Distractors must be obviously wrong to anyone who knows basic English — not near-synonyms, not related concepts, just clearly different words.",
+  B1: "CEFR B1 (intermediate). Short-to-medium sentences (under 15 words), mostly one clause with at most one simple subordinate clause ('because', 'when', 'if'). Everyday, concrete topics only — avoid abstract or academic subject matter. Vocabulary around the target word should be common (top ~3000 words); no idioms or figurative language. Distractors may be loosely related in topic but should not require nuanced judgment to rule out.",
   B2: "CEFR B2 (upper intermediate). Use sentences of moderate complexity on both concrete and abstract topics. Distractors should be plausible near-synonyms requiring real discrimination.",
   C1: "CEFR C1 (advanced). Use complex sentences, including idiomatic and figurative usage. Distractors should differ mainly in register, connotation or collocation.",
   C2: "CEFR C2 (proficient). Use sophisticated, nuanced language including subtle idiom and stylistic variation. Distractors should be very fine-grained, differing only in precise shades of meaning.",
@@ -27,7 +27,7 @@ with this shape and nothing else (no markdown fences, no commentary):
     "partOfSpeech": "<the word's part of speech in this context: noun, verb, adjective, adverb, preposition, conjunction, pronoun, or interjection>"
   },
   "cloze": {
-    "sentence": "<the original sentence with the target word replaced by ____>",
+    "sentence": "<the original sentence with the target word replaced by ____. AT LOWER LEARNER LEVELS (A2/B1), simplify the wording AROUND the blank if the original sentence is complex — shorten it, split it, or swap difficult surrounding words for simpler ones — while preserving the same real-world meaning and keeping the target word's role in the sentence recognizable. At B2+ the original sentence can usually be kept closer to verbatim.>",
     "explanation": "<a short explanation of the word's meaning and a memory hook (e.g. root/origin, a vivid mental image, or a related word) to help it stick>"
   },
   "typedRecall": {
@@ -75,7 +75,7 @@ Rules:
 - Output must be valid JSON, parseable with JSON.parse, and match the shape exactly.
 - Keep all sentences natural and concise.
 - Target this learner level: {{CEFR_GUIDANCE}}
-- Pitch sentence complexity, the vocabulary used AROUND the target word, and how subtle the distractors are to that level. The target word itself stays as captured, whatever its difficulty.
+- Pitch sentence complexity, the vocabulary used AROUND the target word, and how subtle the distractors are to that level — this applies to EVERY exercise type, including "cloze" (see its own simplification note above). The target word being studied itself stays as captured, whatever its difficulty — you are simplifying the sentence it sits in, never swapping out the word itself.
 - Every "options" array must contain 4 distinct strings in randomized order, one of which equals "answer".
 - Every "explanation" should be 1-3 sentences: teach the WHY, not just restate the answer. Favor concrete memory hooks (etymology, imagery, a related word the learner likely already knows) over abstract description.
 - If "Original context" is exactly "(none provided)", the word was added manually with no captured sentence: invent one natural example sentence yourself and use that as if it were the original context throughout, including for "cloze.sentence".`;

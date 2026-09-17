@@ -26,6 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - "Review more" no longer offers locked goals, so the difficulty ramp is a real gate rather than a default ordering.
 - The toolbar due-count badge counts only unlocked goals.
 
+### Fixed
+
+- **CEFR level had no effect on Cloze Deletion.** Cloze always reused the exact sentence a word was captured from, regardless of English level, so if that sentence came from an advanced article it stayed advanced at every level. Cloze can now simplify the wording around the blank at A2/B1 while keeping the same real-world meaning.
+- **A2/B1 guidance was too soft to be noticeable.** Replaced vague wording ("simple sentences", "not subtle") with concrete constraints — word count limits, only-common-vocabulary rules, and no idioms or subordinate clauses at A2 — so a level change is now clearly visible in generated exercises.
+
 ### Notes
 
 - Words captured before this change keep all four goals active — unlocking applies to new captures only, and no stored data is rewritten.
